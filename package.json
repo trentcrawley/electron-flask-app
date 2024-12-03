@@ -1,0 +1,37 @@
+{
+  "name": "electron-flask-app",
+  "version": "1.0.0",
+  "main": "main.js",
+  "author": "Trent Crawley",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^13.6.9",
+    "electron-builder": "^22.11.7"
+  },
+  "build": {
+    "appId": "com.example.electronflaskapp",
+    "files": [
+      "main.js",
+      "app.py",
+      "package.json",
+      "node_modules/**/*",
+      ".venv/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": ".venv",
+        "to": ".venv",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    }
+  }
+}

@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Register Turnover{% endblock %}
+{% block heading %}Register Turnover{% endblock %}
+
+{% block content %}
+    <form id="ticker-form" method="POST" class="grid-form">
+        <input type="hidden" name="generate_plot" value="1">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="ticker">Ticker</label>
+                <input type="text" id="ticker" name="ticker" value="{{ ticker }}" required>
+            </div>
+            <div class="form-group">
+                <label for="exchange">Exchange</label>
+                <input type="text" id="exchange" name="exchange" value="{{ exchange }}">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="start_date">Start Date</label>
+                <input type="date" id="start_date" name="start_date" value="{{ start_date }}" required>
+            </div>
+            <div class="form-group">
+                <label for="end_date">End Date</label>
+                <input type="date" id="end_date" name="end_date" value="{{ end_date }}" required>
+            </div>
+        </div>
+        <div class="form-row">
+            <input type="submit" value="Submit">
+        </div>
+    </form>
+
+    <div class="plot-container">
+        {{ plot_html | safe }}
+    </div>
+
+    <h2>ASX</h2>
+
+    <form id="add-ticker-form" method="POST" action="/register_turnover/add_ticker" class="grid-form">
+        <div class="form-row">
+            <div class="form-group" style="flex: 1;">
+                <label for="new_ticker">New Ticker</label>
+                <input type="text" id="new_ticker" name="new_ticker" required>
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <label for="date">Date</label>
+                <input type="date" id="date" name="date" required>
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <input type="submit" value="Add Ticker" style="margin-top: 24px;">
+            </div>
+        </div>
+    </form>
+
+    <div class="table-container">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Ticker</th>
+                    <th>Date</th>
+                    <th>Register Turnover (%)</th>
+                    <th>Cumulative Turnover (%)</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                {% for row in tracking_data %}
+                <tr>
+                    <td>{{ row['ticker'] }}</td>
+                    <td>{{ row['date'] }}</td>
+                    <td>{{ row['register_turnover'] }}</td>
+                    <td>{{ row['cumulative_turnover'] }}</td>
+                    <td>
+                        <button class="delete-btn" data-id="{{ row['id'] }}">Delete</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tableBody = document.getElementById('table-body');
+    console.log("Table body:", tableBody);
+
+    if (!tableBody) {
+        console.error("Table body not found! Ensure the table exists in the DOM.");
+        return;
+    }
+
+    // Handle form submission for generating plot
+    document.getElementById('ticker-form').addEventListener('submit', function(event) {
+        event.preventDefault(); // Prevent the default form submission
+
+        const formData = new FormData(event.target);
+        fetch('/register_turnover', {
+            method: 'POST',
+            body: formData
+        }).then(response => response.text()).then(html => {
+            document.open();
+            document.write(html);
+            document.close();
+        });
+    });
+
+    // Handle form submission for adding ticker
+    document.getElementById('add-ticker-form').addEventListener('submit', function(event) {
+        event.preventDefault(); // Prevent the default form submission
+
+        const formData = new FormData(event.target);
+        fetch('/register_turnover/add_ticker', {
+            method: 'POST',
+            body: formData
+        }).then(response => response.json()).then(data => {
+            if (data.success) {
+                location.reload(); // Reload the page to reflect changes
+            }
+        });
+    });
+
+    // Handle delete button clicks
+    document.querySelectorAll('.delete-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const rowId = this.dataset.id;
+
+            fetch(`/register_turnover/delete/${rowId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }).then(response => response.json()).then(data => {
+                if (data.success) {
+                    location.reload(); // Reload the page to reflect changes
+                }
+            });
+        });
+    });
+
+    // Get table rows
+    const rows = document.querySelectorAll('table.table-striped tbody tr');
+    
+    rows.forEach(row => {
+        row.addEventListener('dblclick', function() {
+            const ticker = row.cells[0].innerText;
+            const eventdate = row.cells[1].innerText;
+
+            // Set the form values
+            document.getElementById('ticker').value = ticker;
+            document.getElementById('start_date').value = eventdate;
+            document.getElementById('end_date').value = new Date().toISOString().split('T')[0]; // Today's date
+        });
+    });
+});
+</script>
+{% endblock %}

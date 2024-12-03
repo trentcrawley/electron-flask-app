@@ -1,0 +1,178 @@
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #121212;
+    color: #f0f0f0;
+}
+
+.container {
+    display: flex;
+    height: 100vh;
+}
+
+.sidebar {
+    width: 200px;
+    background-color: #1e1e1e;
+    padding-top: 20px;
+    position: fixed;
+    height: 100%;
+}
+
+.sidebar a {
+    padding: 10px 15px;
+    text-decoration: none;
+    font-size: 18px;
+    color: white;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.sidebar a:hover {
+    background-color: #575757;
+    color: white;
+}
+
+.main-content {
+    margin-left: 220px;
+    padding: 20px;
+    width: 100%;
+}
+
+h1 {
+    color: white;
+    font-size: 36px;
+}
+
+.grid-form {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 20px;
+}
+
+input[type="text"], input[type="date"], input[type="submit"] {
+    width: 100%;
+    padding: 5px;
+    border-radius: 5px;
+    border: 1px solid #333;
+    background-color: #333;
+    color: #f0f0f0;
+    font-size: 16px;
+}
+
+input[type="submit"] {
+    width: auto;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    border: none;
+}
+
+.table-container {
+    margin-top: 40px;
+    background-color: #1e1e1e;
+    padding: 20px;
+    border-radius: 10px;
+    width: 50%;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+table, th, td {
+    border: 1px solid #333;
+}
+
+th, td {
+    padding: 10px;
+    text-align: left;
+}
+
+th {
+    background-color: #333;
+}
+
+td {
+    background-color: #1e1e1e;
+}
+
+.plot-container {
+    margin-top: 40px;
+}
+
+h2 {
+    color: #f0f0f0; /* Light text color */
+    margin-top: 20px; /* Add some space before the heading */
+    margin-bottom: 10px; /* Add some space after the heading */
+    font-size: 24px; /* Adjust the font size if necessary */
+    text-align: left; /* Align the heading to the left */
+}
+
+.delete-btn {
+    background-color: transparent;
+    color: red;
+    border: none;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+.delete-btn:hover {
+    color: darkred;
+    transform: scale(1.2);
+}
+/* Table styling */
+table.table-striped {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #1e1e1e;
+    color: #f0f0f0;
+    margin-top: 20px;
+    font-size: 14px;
+}
+
+/* Table header */
+table.table-striped thead tr {
+    background-color: #333;
+    color: #f0f0f0;
+}
+
+/* Table body rows */
+table.table-striped tbody tr {
+    background-color: #1e1e1e;
+}
+
+table.table-striped tbody tr:nth-child(even) {
+    background-color: #2c2c2c;
+}
+
+/* Table cell styling */
+table.table-striped th, table.table-striped td {
+    padding: 8px;
+    text-align: left;
+    border: 1px solid #333;
+}
+
+/* Delete button styling */
+.delete-btn {
+    color: red;
+    font-size: 18px;
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+
+.delete-btn:hover {
+    color: darkred;
+}

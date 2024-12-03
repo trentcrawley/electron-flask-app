@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Register Turnover{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Optional sidebar can be removed if not needed -->
+        <div class="sidebar">
+            <a href="/register_turnover">Register Turnover</a>
+        </div>
+
+        <!-- Main content area -->
+        <div class="main-content">
+            <h1>{% block heading %}{% endblock %}</h1>
+
+            <!-- Page-specific content will be inserted here -->
+            {% block content %}{% endblock %}
+
+            <!-- Any additional content like scripts can be added here -->
+            {% block scripts %}{% endblock %}
+        </div>
+    </div>
+</body>
+</html>

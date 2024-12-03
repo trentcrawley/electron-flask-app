@@ -1,0 +1,12 @@
+# Ignore database files
+app_data.db
+
+# Node modules
+node_modules/
+
+# Python virtual environment
+.venv/
+dist/
+# Other files to ignore
+*.pyc
+__pycache__/
