@@ -68,9 +68,6 @@ def process_tickers():
     # Run the waiting and processing logic in a separate thread
     threading.Thread(target=wait_and_process).start()
 
-    #TODO: make table interactive so can delete and add to db
-    # change db so has event_date i.e date added and don't present id, so we can double click
-    # add us
-    # 
+   
 
 

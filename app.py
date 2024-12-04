@@ -1,4 +1,5 @@
 import sys
+import os
 from flask import Flask, redirect, url_for
 from modules.register_turnover import register_turnover_bp  # Import Register Turnover blueprint
 from modules.db_utils import init_db
@@ -32,4 +33,7 @@ scheduler.start()
 
 if __name__ == "__main__":
     print("Starting Flask server...")
-    app.run(debug=True)
+    if os.getenv('FLASK_ENV') == 'production':
+        app.run(debug=False)
+    else:
+        app.run(debug=True)

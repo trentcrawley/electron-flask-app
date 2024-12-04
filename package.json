@@ -18,7 +18,10 @@
       "app.py",
       "package.json",
       "node_modules/**/*",
-      ".venv/**/*"
+      ".venv/**/*",
+      "modules/**/*",
+      "static/**/*",
+      "templates/**/*"
     ],
     "extraResources": [
       {
@@ -32,6 +35,11 @@
     "win": {
       "target": "nsis",
       "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "extraMetadata": {
+      "env": {
+        "FLASK_ENV": "production"
+      }
     }
   }
 }

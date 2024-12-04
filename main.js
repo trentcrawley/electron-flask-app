@@ -9,7 +9,10 @@ let mainWindow;
 function startFlaskServer() {
     console.log('Starting Flask server...');
     const pythonPath = path.join(__dirname, '.venv', 'Scripts', 'python.exe');  // Adjust the path if necessary
-    flaskProcess = spawn(pythonPath, ['app.py'], { cwd: path.join(__dirname) });
+    flaskProcess = spawn(pythonPath, ['run_waitress.py'], {
+        cwd: path.join(__dirname),
+        env: { ...process.env, FLASK_ENV: 'production' }  // Set FLASK_ENV to production
+    });
 
     flaskProcess.stdout.on('data', (data) => {
         console.log(`Flask: ${data}`);
@@ -31,7 +34,7 @@ function createWindow() {
         width: 1000,
         height: 800,
         webPreferences: {
-            nodeIntegration: true,  // Enable Node integration for WebSocket
+            nodeIntegration: true,
             contextIsolation: false
         }
     });
@@ -69,7 +72,7 @@ function waitForServer(callback) {
 
 app.on('ready', () => {
     flaskProcess = startFlaskServer();
-    waitForServer(createWindow);
+    setTimeout(() => waitForServer(createWindow), 5000);  // Wait 5 seconds before checking if the server is up
 });
 
 app.on('window-all-closed', function () {
