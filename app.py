@@ -5,6 +5,9 @@ from modules.register_turnover import register_turnover_bp  # Import Register Tu
 from modules.db_utils import init_db
 from modules.ticker_processing import process_tickers
 from apscheduler.schedulers.background import BackgroundScheduler
+import logging
+
+logging.basicConfig(level=logging.DEBUG, filename='flask.log', filemode='a', format='%(asctime)s - %(levelname)s - %(message)s')
 
 app = Flask(__name__)
 
@@ -24,15 +27,15 @@ scheduler = BackgroundScheduler()
 
 def scheduled_task():
     # Example task
-    print('Scheduled task is running...')
+    logging.debug('Scheduled task is running...')
     process_tickers()
-    print('Scheduled task completed.')
+    logging.debug('Scheduled task completed.')
 
 scheduler.add_job(scheduled_task, 'cron', hour=15, minute=59)  # Run at 3:10 PM every day
 scheduler.start()
 
 if __name__ == "__main__":
-    print("Starting Flask server...")
+    logging.debug("Starting Flask server...")
     if os.getenv('FLASK_ENV') == 'production':
         app.run(debug=False)
     else:

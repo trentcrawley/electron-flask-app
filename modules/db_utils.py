@@ -1,7 +1,18 @@
 import sqlite3
+import logging
+import os
+import sys
 
 def init_db():
-    conn = sqlite3.connect('app_data.db')
+    if getattr(sys, 'frozen', False):
+        # If the application is run as a bundle
+        db_path = os.path.join(os.path.dirname(sys.executable), 'resources', 'app_data.db')
+    else:
+        # If the application is run in a normal Python environment
+        db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'app_data.db'))
+    
+    logging.debug(f"Initializing database at {db_path}")
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
     # Create a table for tracking register turnovers
@@ -27,3 +38,50 @@ def init_db():
 
     conn.commit()
     conn.close()
+
+def get_db_connection():
+    if getattr(sys, 'frozen', False):
+        # If the application is run as a bundle
+        db_path = os.path.join(os.path.dirname(sys.executable), 'resources', 'app_data.db')
+    else:
+        # If the application is run in a normal Python environment
+        db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'app_data.db'))
+    
+    logging.debug(f"Connecting to database at {db_path}")
+    conn = sqlite3.connect(db_path)
+    return conn
+
+#get_db_connection()
+
+# import sqlite3
+# import logging
+# import os
+# import sys
+
+# def get_db_connection2():
+
+#     db_path = r'C:\Users\trent\VSCode\electron-flask-app\dist\win-unpacked\resources\app_data.db'
+#     #db_path = r'C:\Users\trent\VSCode\electron-flask-app\app_data.db'
+    
+#     logging.debug(f"Connecting to database at {db_path}")
+#     conn = sqlite3.connect(db_path)
+#     return conn
+
+# def check_database_contents():
+#     conn = get_db_connection2()
+#     cursor = conn.cursor()
+    
+#     # Check contents of register_turnover table
+#     cursor.execute('SELECT * FROM register_turnover')
+#     register_turnover_rows = cursor.fetchall()
+#     print(register_turnover_rows)
+#     logging.debug(f"register_turnover table contents: {register_turnover_rows}")
+    
+#     # Check contents of soi table
+#     cursor.execute('SELECT * FROM soi')
+#     soi_rows = cursor.fetchall()
+#     logging.debug(f"soi table contents: {soi_rows}")
+    
+#     conn.close()
+
+# check_database_contents()

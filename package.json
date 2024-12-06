@@ -4,8 +4,8 @@
   "main": "main.js",
   "author": "Trent Crawley",
   "scripts": {
-    "start": "electron .",
-    "build": "electron-builder"
+    "start": "set NODE_ENV=development && electron .",
+    "build": "set NODE_ENV=production && electron-builder"
   },
   "devDependencies": {
     "electron": "^13.6.9",
@@ -16,6 +16,7 @@
     "files": [
       "main.js",
       "app.py",
+      "run_waitress.py",
       "package.json",
       "node_modules/**/*",
       ".venv/**/*",
@@ -30,6 +31,39 @@
         "filter": [
           "**/*"
         ]
+      },
+      {
+        "from": "run_waitress.py",
+        "to": "run_waitress.py"
+      },
+      {
+        "from": "app.py",
+        "to": "app.py"
+      },
+      {
+        "from": "modules",
+        "to": "modules",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "static",
+        "to": "static",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "templates",
+        "to": "templates",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "app_data.db",
+        "to": "app_data.db"
       }
     ],
     "win": {
