@@ -22,7 +22,8 @@ def init_db():
             ticker TEXT NOT NULL,
             date TEXT NOT NULL,
             register_turnover REAL NOT NULL,
-            cumulative_turnover REAL NOT NULL
+            cumulative_turnover REAL NOT NULL,
+            exchange TEXT NOT NULL
         )
     ''')
 
@@ -32,7 +33,8 @@ def init_db():
             id INTEGER PRIMARY KEY,
             ticker TEXT NOT NULL,
             date TEXT NOT NULL,
-            soi REAL NOT NULL
+            soi REAL NOT NULL,
+            exchange TEXT NOT NULL
         )
     ''')
 
@@ -51,37 +53,18 @@ def get_db_connection():
     conn = sqlite3.connect(db_path)
     return conn
 
-#get_db_connection()
-
-# import sqlite3
-# import logging
-# import os
-# import sys
-
-# def get_db_connection2():
-
-#     db_path = r'C:\Users\trent\VSCode\electron-flask-app\dist\win-unpacked\resources\app_data.db'
-#     #db_path = r'C:\Users\trent\VSCode\electron-flask-app\app_data.db'
+def check_database_contents():
+    conn = get_db_connection()
+    cursor = conn.cursor()
     
-#     logging.debug(f"Connecting to database at {db_path}")
-#     conn = sqlite3.connect(db_path)
-#     return conn
-
-# def check_database_contents():
-#     conn = get_db_connection2()
-#     cursor = conn.cursor()
+    # Check contents of register_turnover table
+    cursor.execute('SELECT * FROM register_turnover')
+    register_turnover_rows = cursor.fetchall()
+    logging.debug(f"register_turnover table contents: {register_turnover_rows}")
     
-#     # Check contents of register_turnover table
-#     cursor.execute('SELECT * FROM register_turnover')
-#     register_turnover_rows = cursor.fetchall()
-#     print(register_turnover_rows)
-#     logging.debug(f"register_turnover table contents: {register_turnover_rows}")
+    # Check contents of soi table
+    cursor.execute('SELECT * FROM soi')
+    soi_rows = cursor.fetchall()
+    logging.debug(f"soi table contents: {soi_rows}")
     
-#     # Check contents of soi table
-#     cursor.execute('SELECT * FROM soi')
-#     soi_rows = cursor.fetchall()
-#     logging.debug(f"soi table contents: {soi_rows}")
-    
-#     conn.close()
-
-# check_database_contents()
+    conn.close()

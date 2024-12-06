@@ -10,18 +10,20 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-def process_tickers():
-    tickers = get_scanner_tickers(scan_number=5, exchange="ASX")
+def process_tickers(exchange="ASX"):
+    tickers = get_scanner_tickers(scan_number=6, exchange=exchange)
     now = datetime.now()
-    cutoff_time = now.replace(hour=16, minute=35, second=0, microsecond=0)
-    #cutoff_time = now.replace(hour=16, minute=31, second=0, microsecond=0)
+    if exchange == "US":
+        cutoff_time = now.replace(hour=9, minute=35, second=0, microsecond=0)
+    else:
+        cutoff_time = now.replace(hour=16, minute=35, second=0, microsecond=0)
 
     def wait_and_process():
         while datetime.now() < cutoff_time:
             time.sleep(30)
 
         for ticker in tickers:
-            ticker_with_exchange = f"{ticker}.AX"
+            ticker_with_exchange = f"{ticker}.AX" if exchange == "ASX" else ticker
             stock_data = yf.Ticker(ticker_with_exchange)
             history = stock_data.history(period="1d")
 
@@ -38,10 +40,10 @@ def process_tickers():
                         # Check if the ticker already exists in the database
                         cursor.execute('''
                             SELECT cumulative_turnover FROM register_turnover
-                            WHERE ticker = ?
+                            WHERE ticker = ? AND exchange = ?
                             ORDER BY date DESC
                             LIMIT 1
-                        ''', (ticker,))
+                        ''', (ticker, exchange))
                         result = cursor.fetchone()
 
                         if result:
@@ -50,11 +52,19 @@ def process_tickers():
                         else:
                             cumulative_turnover = register_turnover
 
-                        # Insert register turnover data
-                        cursor.execute('''
-                            INSERT INTO register_turnover (ticker, date, register_turnover, cumulative_turnover)
-                            VALUES (?, ?, ?, ?)
-                        ''', (ticker, now.strftime('%Y-%m-%d'), register_turnover, cumulative_turnover))
+                        if result:
+                            # Update the existing entry
+                            cursor.execute('''
+                                UPDATE register_turnover
+                                SET date = ?, register_turnover = ?, cumulative_turnover = ?
+                                WHERE ticker = ? AND exchange = ?
+                            ''', (now.strftime("%Y-%m-%d"), register_turnover, cumulative_turnover, ticker, exchange))
+                        else:
+                            # Insert a new entry
+                            cursor.execute('''
+                                INSERT INTO register_turnover (ticker, date, register_turnover, cumulative_turnover, exchange)
+                                VALUES (?, ?, ?, ?, ?)
+                            ''', (ticker, now.strftime("%Y-%m-%d"), register_turnover, cumulative_turnover, exchange))
 
                         # Insert SOI data
                         cursor.execute('''
@@ -65,9 +75,5 @@ def process_tickers():
                         conn.commit()
                         conn.close()
 
-    # Run the waiting and processing logic in a separate thread
+    # Run the wait_and_process function in a separate thread
     threading.Thread(target=wait_and_process).start()
-
-   
-
-
