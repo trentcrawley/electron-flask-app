@@ -58,7 +58,7 @@ function startFlaskServer() {
 
     return flaskProcess;
 }
-
+test
 function createWindow() {
     logToFile('Creating main window...');
     mainWindow = new BrowserWindow({
