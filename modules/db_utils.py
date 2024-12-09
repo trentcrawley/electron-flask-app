@@ -2,15 +2,40 @@ import sqlite3
 import logging
 import os
 import sys
+import subprocess
+
+def get_current_git_branch():
+    try:
+        result = subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if result.returncode == 0:
+            return result.stdout.strip()
+        else:
+            logging.error(f"Error determining Git branch: {result.stderr}")
+            return None
+    except Exception as e:
+        logging.error(f"Exception determining Git branch: {e}")
+        return None
+
+def get_db_path():
+    branch = get_current_git_branch()
+    if branch == 'development':
+        db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'app_data_dev.db'))
+    elif branch == 'master':
+        db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'app_data.db'))
+    else:
+        db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'app_data_other.db'))
+    return db_path
+
+def get_db_connection():
+    db_path = get_db_path()
+    print(f"Connecting to database at {db_path}")  # Print the database path for debugging
+    logging.debug(f"Connecting to database at {db_path}")
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 def init_db():
-    if getattr(sys, 'frozen', False):
-        # If the application is run as a bundle
-        db_path = os.path.join(os.path.dirname(sys.executable), 'resources', 'app_data.db')
-    else:
-        # If the application is run in a normal Python environment
-        db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'app_data.db'))
-    
+    db_path = get_db_path()
     logging.debug(f"Initializing database at {db_path}")
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
@@ -18,40 +43,28 @@ def init_db():
     # Create a table for tracking register turnovers
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS register_turnover (
-            id INTEGER PRIMARY KEY,
             ticker TEXT NOT NULL,
-            date TEXT NOT NULL,
+            date DATETIME NOT NULL,
             register_turnover REAL NOT NULL,
             cumulative_turnover REAL NOT NULL,
-            exchange TEXT NOT NULL
+            exchange TEXT NOT NULL,
+            PRIMARY KEY (date, ticker)
         )
     ''')
 
     # Create a table for tracking shares on issue (SOI)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS soi (
-            id INTEGER PRIMARY KEY,
             ticker TEXT NOT NULL,
-            date TEXT NOT NULL,
+            date DATETIME NOT NULL,
             soi REAL NOT NULL,
-            exchange TEXT NOT NULL
+            exchange TEXT NOT NULL,
+            PRIMARY KEY (date, ticker)
         )
     ''')
 
     conn.commit()
     conn.close()
-
-def get_db_connection():
-    if getattr(sys, 'frozen', False):
-        # If the application is run as a bundle
-        db_path = os.path.join(os.path.dirname(sys.executable), 'resources', 'app_data.db')
-    else:
-        # If the application is run in a normal Python environment
-        db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'app_data.db'))
-    
-    logging.debug(f"Connecting to database at {db_path}")
-    conn = sqlite3.connect(db_path)
-    return conn
 
 def check_database_contents():
     conn = get_db_connection()
@@ -60,11 +73,18 @@ def check_database_contents():
     # Check contents of register_turnover table
     cursor.execute('SELECT * FROM register_turnover')
     register_turnover_rows = cursor.fetchall()
-    logging.debug(f"register_turnover table contents: {register_turnover_rows}")
+    register_turnover_data = [dict(row) for row in register_turnover_rows]  # Convert rows to dictionaries
+    logging.debug(f"register_turnover table contents: {register_turnover_data}")
+    print(f"register_turnover table contents: {register_turnover_data}")
     
     # Check contents of soi table
     cursor.execute('SELECT * FROM soi')
     soi_rows = cursor.fetchall()
-    logging.debug(f"soi table contents: {soi_rows}")
+    soi_data = [dict(row) for row in soi_rows]  # Convert rows to dictionaries
+    logging.debug(f"soi table contents: {soi_data}")
+    print(f"soi table contents: {soi_data}")
     
     conn.close()
+
+# Uncomment the following line to check database contents during debugging
+check_database_contents()

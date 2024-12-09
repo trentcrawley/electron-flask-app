@@ -1,5 +1,6 @@
 # Ignore database files
 app_data.db
+app_data_dev.db
 flask.log
 electron.log
 # Node modules
