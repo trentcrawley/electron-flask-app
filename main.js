@@ -21,23 +21,28 @@ function startFlaskServer() {
     let pythonPath;
     let scriptPath;
     let workingDirectory;
-    if (process.env.NODE_ENV === 'development') {
-        pythonPath = path.join(__dirname, '.venv', 'Scripts', 'python.exe');  // Adjust the path if necessary
-        scriptPath = path.join(__dirname, 'run_waitress.py');  // Adjust the path if necessary
-        workingDirectory = __dirname;
-    } else {
+    let flaskEnv;
+
+    if (process.env.NODE_ENV === 'production') {
         pythonPath = path.join(process.resourcesPath, '.venv', 'Scripts', 'python.exe');  // Adjust the path if necessary
         scriptPath = path.join(process.resourcesPath, 'run_waitress.py');  // Adjust the path if necessary
         workingDirectory = process.resourcesPath;
+        flaskEnv = 'production';
+    } else {
+        pythonPath = path.join(__dirname, '.venv', 'Scripts', 'python.exe');  // Adjust the path if necessary
+        scriptPath = path.join(__dirname, 'run_waitress.py');  // Adjust the path if necessary
+        workingDirectory = __dirname;
+        flaskEnv = 'development';
     }
 
     logToFile(`Using Python executable at: ${pythonPath}`);
     logToFile(`Using script at: ${scriptPath}`);
     logToFile(`Current working directory: ${workingDirectory}`);
+    logToFile(`FLASK_ENV is set to: ${flaskEnv}`);
 
     flaskProcess = spawn(pythonPath, [scriptPath], {
         cwd: workingDirectory,  // Ensure this is the correct working directory
-        env: { ...process.env, FLASK_ENV: 'production' }  // Set FLASK_ENV to production
+        env: { ...process.env, FLASK_ENV: flaskEnv }  // Set FLASK_ENV based on NODE_ENV
     });
 
     flaskProcess.stdout.on('data', (data) => {
@@ -65,15 +70,13 @@ function createWindow() {
         width: 1000,
         height: 800,
         webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false
+            nodeIntegration: true
         }
     });
 
-    mainWindow.loadURL('http://127.0.0.1:5000/');  // Load the Flask app URL
+    mainWindow.loadURL('http://127.0.0.1:5000');  // Load the URL served by the Flask server
 
-    mainWindow.on('closed', function () {
-        logToFile('Main window closed');
+    mainWindow.on('closed', () => {
         mainWindow = null;
     });
 

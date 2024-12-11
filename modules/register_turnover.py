@@ -1,58 +1,143 @@
-from flask import Blueprint, render_template, request, jsonify, redirect
+from flask import Blueprint, render_template, request, jsonify, redirect, url_for
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
 import sqlite3
+import subprocess
+import os
+from loguru import logger
+import time
 
 register_turnover_bp = Blueprint('register_turnover', __name__)
 
+# Configure loguru logger
+log_file_path = os.path.join(os.getcwd(), 'logs', 'register_turnover.log')
+os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
+logger.add(log_file_path, level="DEBUG", format="{time} - {level} - {message}")
+
+def get_current_git_branch():
+    try:
+        result = subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if result.returncode == 0:
+            return result.stdout.strip()
+        else:
+            logger.error(f"Error determining Git branch: {result.stderr}")
+            return None
+    except Exception as e:
+        logger.error(f"Exception determining Git branch: {e}")
+        return None
+
+def get_db_path():
+    branch = get_current_git_branch()
+    if branch == 'development':
+        db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'app_data_dev.db'))
+    elif branch == 'master':
+        db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'app_data.db'))
+    else:
+        db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'app_data_other.db'))
+    logger.debug(f"Database path: {db_path}")
+    return db_path
+
 def get_db_connection():
-    conn = sqlite3.connect('app_data.db')
+    db_path = get_db_path()
+    logger.debug(f"Connecting to database at {db_path}")
+    conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
 
+def execute_query_with_retry(query, params=(), retries=5, delay=0.1):
+    for attempt in range(retries):
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute(query, params)
+            results = cursor.fetchall()
+            conn.commit()
+            conn.close()
+            return results
+        except sqlite3.OperationalError as e:
+            if "database is locked" in str(e):
+                logger.warning(f"Database is locked, retrying... ({attempt + 1}/{retries})")
+                time.sleep(delay)
+            else:
+                raise
+    raise sqlite3.OperationalError("Max retries reached, database is still locked")
+
 @register_turnover_bp.route("/", methods=["GET", "POST"])
 def register_turnover():
+    logger.debug("register_turnover function called")
     today = datetime.today().strftime("%Y-%m-%d")
     ticker, exchange, start_date, end_date = "", "", today, today
 
     # Step 1: Load tracking data from SQLite
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM register_turnover")
-    tracking_data = cursor.fetchall()
-    conn.close()
+    logger.debug("Loading tracking data from SQLite")
+    
+    # Fetch ASX stocks
+    asx_data = execute_query_with_retry("SELECT ticker, date AS tracked_since, register_turnover AS turnover_today, cumulative_turnover FROM register_turnover WHERE exchange = 'ASX' ORDER BY turnover_today DESC")
+    logger.debug(f"ASX data loaded: {asx_data}")
 
-    # Convert database rows into an HTML table
-    if tracking_data:
-        tracking_df = pd.DataFrame(
-            tracking_data,
-            columns=["id", "ticker", "date", "register_turnover", "cumulative_turnover"],
+    # Fetch US stocks
+    us_data = execute_query_with_retry("SELECT ticker, date AS tracked_since, register_turnover AS turnover_today, cumulative_turnover FROM register_turnover WHERE exchange = 'US' ORDER BY turnover_today DESC")
+    logger.debug(f"US data loaded: {us_data}")
+
+    # Convert database rows into HTML tables
+    # Convert database rows into HTML tables
+    if asx_data:
+        asx_df = pd.DataFrame(
+            asx_data,
+            columns=["ticker", "tracked_since", "turnover_today", "cumulative_turnover"],
         )
-        tracking_df["delete"] = tracking_df["id"].apply(
-            lambda id: f'<button class="delete-btn" data-id="{id}" style="color: red; border: none; background: none;">&times;</button>'
+        asx_df["delete"] = asx_df.apply(
+            lambda row: f'<button class="delete-btn" data-ticker="{row["ticker"]}" data-date="{row["tracked_since"]}" style="color: red; border: none; background: none;">&times;</button>',
+            axis=1
         )
-        tracking_html = tracking_df.to_html(
+        asx_html = asx_df.to_html(
             index=False,
             classes="table table-striped",
             columns=[
-                "id",
                 "ticker",
-                "date",
-                "register_turnover",
+                "tracked_since",
+                "turnover_today",
                 "cumulative_turnover",
                 "delete",
             ],
             escape=False,
         )
     else:
-        tracking_html = "<p>No tracking data found.</p>"
+        asx_html = "<p>No ASX tracking data found.</p>"
+    logger.debug(f"ASX HTML generated: {asx_html}")
+
+    if us_data:
+        us_df = pd.DataFrame(
+            us_data,
+            columns=["ticker", "tracked_since", "turnover_today", "cumulative_turnover"],
+        )
+        us_df["delete"] = us_df.apply(
+            lambda row: f'<button class="delete-btn" data-ticker="{row["ticker"]}" data-date="{row["tracked_since"]}" style="color: red; border: none; background: none;">&times;</button>',
+            axis=1
+        )
+        us_html = us_df.to_html(
+            index=False,
+            classes="table table-striped",
+            columns=[
+                "ticker",
+                "tracked_since",
+                "turnover_today",
+                "cumulative_turnover",
+                "delete",
+            ],
+            escape=False,
+        )
+    else:
+        us_html = "<p>No US tracking data found.</p>"
+    logger.debug(f"US HTML generated: {us_html}")
 
     # Step 2: Handle Plotly chart generation
     plot_html = ""
     if request.method == "POST" and 'generate_plot' in request.form:
+        logger.debug("Generating Plotly chart")
         ticker = request.form.get("ticker")
         exchange = request.form.get("exchange")
         start_date = request.form.get("start_date")
@@ -64,6 +149,7 @@ def register_turnover():
         ticker_with_exchange = f"{ticker}.{exchange}" if exchange else ticker
         stock_data = yf.Ticker(ticker_with_exchange)
         history = stock_data.history(start=start_date, end=end_date)
+        logger.debug(f"Stock history data: {history}")
 
         if not history.empty:
             # Get shares outstanding
@@ -167,6 +253,7 @@ def register_turnover():
             )
 
             plot_html = fig.to_html(full_html=False)
+            logger.debug(f"Plot HTML generated: {plot_html}")
 
     return render_template(
         "index.html",
@@ -176,44 +263,33 @@ def register_turnover():
         exchange=exchange,
         start_date=start_date,
         end_date=end_date,
-        tracking_html=tracking_html,
-        tracking_data=tracking_data,
+        asx_html=asx_html,
+        us_html=us_html,
     )
 
 @register_turnover_bp.route("/add_ticker", methods=["POST"])
 def add_ticker():
     ticker = request.form.get("new_ticker")
     date = request.form.get("date")
-    if not ticker or not date:
-        return jsonify(success=False, error="Ticker and Date are required"), 400
+    exchange = request.form.get("exchange").upper()  # Normalize exchange to uppercase
+    if not ticker or not date or not exchange:
+        return jsonify(success=False, error="Ticker, Date, and Exchange are required"), 400
 
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute(
-            """
-            INSERT INTO register_turnover (ticker, date, register_turnover, cumulative_turnover)
-            VALUES (?, ?, ?, ?)
-            """,
-            (ticker, date, 0, 0),
-        )
-        conn.commit()
-        conn.close()
+        execute_query_with_retry('''
+            INSERT INTO register_turnover (ticker, date, register_turnover, cumulative_turnover, exchange)
+            VALUES (?, ?, 0, 0, ?)
+        ''', (ticker, date, exchange))
         return jsonify(success=True)
     except Exception as e:
-        print(f"Error adding ticker: {e}")
+        logger.error(f"Error adding ticker: {e}")
         return jsonify(success=False, error=str(e)), 500
 
-
-@register_turnover_bp.route("/delete/<int:row_id>", methods=["POST"])
-def delete_row(row_id):
+@register_turnover_bp.route("/delete/<ticker>/<date>", methods=["POST"])
+def delete_ticker(ticker, date):
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM register_turnover WHERE id = ?", (row_id,))
-        conn.commit()
-        conn.close()
+        execute_query_with_retry('DELETE FROM register_turnover WHERE ticker = ? AND date = ?', (ticker, date))
         return jsonify(success=True)
     except Exception as e:
-        print(f"Error deleting row: {e}")
+        logger.error(f"Error deleting ticker: {e}")
         return jsonify(success=False, error=str(e)), 500

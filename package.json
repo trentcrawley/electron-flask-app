@@ -72,7 +72,7 @@
     },
     "extraMetadata": {
       "env": {
-        "FLASK_ENV": "production"
+        "FLASK_ENV": "development"
       }
     }
   }

@@ -173,6 +173,41 @@ table.table-striped th, table.table-striped td {
     cursor: pointer;
 }
 
-.delete-btn:hover {
-    color: darkred;
+.add-ticker-form {
+    max-width: 100%; /* Allow the form to take full width */
+    margin: 0; /* Remove auto margin to align to the left */
+}
+
+.add-ticker-form .form-row {
+    display: flex;
+    flex-wrap: nowrap; /* Ensure the items do not wrap */
+    justify-content: flex-start; /* Align items to the start */
+    align-items: center; /* Center items vertically */
+}
+
+.add-ticker-form .form-group {
+    flex: 1;
+    margin-right: 20px; /* Add more space between form groups */
+}
+
+.add-ticker-form .form-group:last-child {
+    margin-right: 0; /* Remove margin from the last form group */
+}
+
+.add-ticker-form .form-group input[type="text"],
+.add-ticker-form .form-group input[type="date"],
+.add-ticker-form .form-group input[type="submit"] {
+    width: 100%; /* Make the text input take full width */
+    height: 40px; /* Ensure consistent height for inputs and button */
+}
+
+/* Styles for the tracking data tables */
+.tracking-data {
+    display: flex;
+    justify-content: space-between;
+}
+
+.table-container {
+    flex: 1;
+    margin: 0 10px;
 }

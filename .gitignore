@@ -9,6 +9,7 @@ node_modules/
 # Python virtual environment
 .venv/
 dist/
+logs/
 # Other files to ignore
 *.pyc
 __pycache__/

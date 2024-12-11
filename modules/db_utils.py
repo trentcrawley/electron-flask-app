@@ -87,4 +87,4 @@ def check_database_contents():
     conn.close()
 
 # Uncomment the following line to check database contents during debugging
-check_database_contents()
+#check_database_contents()
