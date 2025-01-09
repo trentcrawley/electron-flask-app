@@ -7,11 +7,18 @@ import threading
 import os
 import subprocess
 from loguru import logger
+import pytz
 
 # Configure loguru logger
 log_file_path = os.path.join(os.getcwd(), 'logs', 'ticker_processing.log')
 os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
 logger.add(log_file_path, level="DEBUG", format="{time} - {level} - {message}")
+
+# Define the US time zone (e.g., Eastern Time)
+us_tz = pytz.timezone('US/Eastern')
+
+# Define your local time zone (e.g., Australia/Sydney)
+local_tz = pytz.timezone('Australia/Sydney')
 
 def get_current_git_branch():
     try:
@@ -47,14 +54,17 @@ def process_tickers(exchange="ASX", scheduled_time=None):
     logger.debug(f"Starting process_tickers for exchange: {exchange} at {datetime.now()}")
     tickers = get_scanner_tickers(scan_number=6, exchange=exchange)
     logger.debug(f"Tickers to process: {tickers}")
-    now = datetime.now()
+    
+    now_local = datetime.now(local_tz)
+    now_us = datetime.now(us_tz)
+    
     if scheduled_time:
         cutoff_time = scheduled_time + timedelta(minutes=35)
     else:
         if exchange == "US":
-            cutoff_time = now.replace(hour=9, minute=35, second=0, microsecond=0)
+            cutoff_time = now_us.replace(hour=9, minute=35, second=0, microsecond=0)
         else:
-            cutoff_time = now.replace(hour=16, minute=35, second=0, microsecond=0)
+            cutoff_time = now_local.replace(hour=16, minute=35, second=0, microsecond=0)
     logger.debug(f"Cutoff time set to: {cutoff_time}")
 
     def wait_and_process():
@@ -104,21 +114,21 @@ def process_tickers(exchange="ASX", scheduled_time=None):
                                 UPDATE register_turnover
                                 SET date = ?, register_turnover = ?, cumulative_turnover = ?
                                 WHERE ticker = ? AND exchange = ?
-                            ''', (now.strftime("%Y-%m-%d"), register_turnover, cumulative_turnover, ticker, exchange))
+                            ''', (now_local.strftime("%Y-%m-%d") if exchange == "ASX" else now_us.strftime("%Y-%m-%d"), register_turnover, cumulative_turnover, ticker, exchange))
                             logger.debug(f"Updated existing entry for {ticker_with_exchange}")
                         else:
                             # Insert a new entry
                             cursor.execute('''
                                 INSERT INTO register_turnover (ticker, date, register_turnover, cumulative_turnover, exchange)
                                 VALUES (?, ?, ?, ?, ?)
-                            ''', (ticker, now.strftime("%Y-%m-%d"), register_turnover, cumulative_turnover, exchange))
+                            ''', (ticker, now_local.strftime("%Y-%m-%d") if exchange == "ASX" else now_us.strftime("%Y-%m-%d"), register_turnover, cumulative_turnover, exchange))
                             logger.debug(f"Inserted new entry for {ticker_with_exchange}")
 
                         # Insert SOI data
                         cursor.execute('''
                             INSERT INTO soi (ticker, date, soi, exchange)
                             VALUES (?, ?, ?, ?)
-                        ''', (ticker, now.strftime('%Y-%m-%d'), shares_outstanding, exchange))
+                        ''', (ticker, now_local.strftime('%Y-%m-%d') if exchange == "ASX" else now_us.strftime('%Y-%m-%d'), shares_outstanding, exchange))
                         logger.debug(f"Inserted SOI data for {ticker_with_exchange}")
 
                         conn.commit()
@@ -126,3 +136,7 @@ def process_tickers(exchange="ASX", scheduled_time=None):
 
     # Run the wait-and-process function in a separate thread
     threading.Thread(target=wait_and_process).start()
+
+# Example usage
+# process_tickers(exchange="ASX")
+# process_tickers(exchange="US")

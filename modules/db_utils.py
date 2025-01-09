@@ -1,8 +1,12 @@
 import sqlite3
-import logging
 import os
-import sys
 import subprocess
+from loguru import logger
+
+# Configure loguru logger
+log_file_path = os.path.join(os.getcwd(), 'logs', 'db_utils.log')
+os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
+logger.add(log_file_path, level="DEBUG", format="{time} - {level} - {message}")
 
 def get_current_git_branch():
     try:
@@ -10,10 +14,10 @@ def get_current_git_branch():
         if result.returncode == 0:
             return result.stdout.strip()
         else:
-            logging.error(f"Error determining Git branch: {result.stderr}")
+            logger.error(f"Error determining Git branch: {result.stderr}")
             return None
     except Exception as e:
-        logging.error(f"Exception determining Git branch: {e}")
+        logger.error(f"Exception determining Git branch: {e}")
         return None
 
 def get_db_path():
@@ -24,19 +28,20 @@ def get_db_path():
         db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'app_data.db'))
     else:
         db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'app_data_other.db'))
+    logger.debug(f"Database path: {db_path}")
     return db_path
 
 def get_db_connection():
     db_path = get_db_path()
     print(f"Connecting to database at {db_path}")  # Print the database path for debugging
-    logging.debug(f"Connecting to database at {db_path}")
+    logger.debug(f"Connecting to database at {db_path}")
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
 
 def init_db():
     db_path = get_db_path()
-    logging.debug(f"Initializing database at {db_path}")
+    logger.debug(f"Initializing database at {db_path}")
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
@@ -65,26 +70,4 @@ def init_db():
 
     conn.commit()
     conn.close()
-
-def check_database_contents():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    # Check contents of register_turnover table
-    cursor.execute('SELECT * FROM register_turnover')
-    register_turnover_rows = cursor.fetchall()
-    register_turnover_data = [dict(row) for row in register_turnover_rows]  # Convert rows to dictionaries
-    logging.debug(f"register_turnover table contents: {register_turnover_data}")
-    print(f"register_turnover table contents: {register_turnover_data}")
-    
-    # Check contents of soi table
-    cursor.execute('SELECT * FROM soi')
-    soi_rows = cursor.fetchall()
-    soi_data = [dict(row) for row in soi_rows]  # Convert rows to dictionaries
-    logging.debug(f"soi table contents: {soi_data}")
-    print(f"soi table contents: {soi_data}")
-    
-    conn.close()
-
-# Uncomment the following line to check database contents during debugging
-#check_database_contents()
+    logger.debug("Database initialized successfully")

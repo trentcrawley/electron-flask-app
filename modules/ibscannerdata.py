@@ -35,13 +35,15 @@ class ScannerApp(EWrapper, EClient):
         if self.exchange == "ASX":
             subscription.instrument = "STOCK.HK"
             subscription.locationCode = "STK.HK.ASX"
+            subscription.marketCapAbove = 8
         elif self.exchange == "US":
             subscription.instrument = "STK"
             subscription.locationCode = "STK.US.MAJOR"
+            subscription.marketCapAbove = 30
 
         subscription.numberOfRows = 500
         subscription.scanCode = "TOP_PERC_GAIN"  # Scanning for top percentage gainers
-        subscription.marketCapAbove = 8
+        #subscription.marketCapAbove = 8
         subscription.abovePrice = 0.03
         print(f"Requesting scanner subscription {self.scann_subscription_number}")
         self.reqScannerSubscription(self.scann_subscription_number, subscription, [], [])

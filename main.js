@@ -22,23 +22,27 @@ function startFlaskServer() {
     let scriptPath;
     let workingDirectory;
     let flaskEnv;
+    let port;
 
     if (process.env.NODE_ENV === 'production') {
         pythonPath = path.join(process.resourcesPath, '.venv', 'Scripts', 'python.exe');  // Adjust the path if necessary
         scriptPath = path.join(process.resourcesPath, 'run_waitress.py');  // Adjust the path if necessary
         workingDirectory = process.resourcesPath;
         flaskEnv = 'production';
+        port = 5000;
     } else {
         pythonPath = path.join(__dirname, '.venv', 'Scripts', 'python.exe');  // Adjust the path if necessary
         scriptPath = path.join(__dirname, 'run_waitress.py');  // Adjust the path if necessary
         workingDirectory = __dirname;
         flaskEnv = 'development';
+        port = 5001;
     }
 
     logToFile(`Using Python executable at: ${pythonPath}`);
     logToFile(`Using script at: ${scriptPath}`);
     logToFile(`Current working directory: ${workingDirectory}`);
     logToFile(`FLASK_ENV is set to: ${flaskEnv}`);
+    logToFile(`Flask server will run on port: ${port}`);
 
     flaskProcess = spawn(pythonPath, [scriptPath], {
         cwd: workingDirectory,  // Ensure this is the correct working directory
@@ -74,7 +78,8 @@ function createWindow() {
         }
     });
 
-    mainWindow.loadURL('http://127.0.0.1:5000');  // Load the URL served by the Flask server
+    const port = process.env.NODE_ENV === 'production' ? 5000 : 5001;
+    mainWindow.loadURL(`http://127.0.0.1:${port}`);  // Load the URL served by the Flask server
 
     mainWindow.on('closed', () => {
         mainWindow = null;
@@ -90,9 +95,10 @@ function createWindow() {
 }
 
 function waitForServer(callback) {
+    const port = process.env.NODE_ENV === 'production' ? 5000 : 5001;
     const interval = setInterval(() => {
         logToFile('Checking if server is up...');
-        http.get('http://127.0.0.1:5000', (res) => {
+        http.get(`http://127.0.0.1:${port}`, (res) => {
             logToFile(`Received response with status code: ${res.statusCode}`);
             if (res.statusCode === 200 || res.statusCode === 302) {
                 logToFile('Server is up!');
